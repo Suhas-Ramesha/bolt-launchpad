@@ -1,26 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { LandingPage } from "@/components/landing/LandingPage";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  component: LandingPage,
+  head: () => ({
+    meta: [
+      { title: "Bolt+ — Clean, Smooth Energy. No Crash." },
+      {
+        name: "description",
+        content:
+          "Bolt+ is a honey-powered natural energy gel. Three caffeine levels, zero crash. Join the pre-launch list for early access and an exclusive discount.",
+      },
+      { property: "og:title", content: "Bolt+ — Clean, Smooth Energy. No Crash." },
+      {
+        property: "og:description",
+        content:
+          "Honey-powered natural energy gels. No spike, no crash. Join the early access list.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+    ],
+  }),
 });
-
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
-}
