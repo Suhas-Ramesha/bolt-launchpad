@@ -1,11 +1,25 @@
-import path from "node:path";
-import { pathToFileURL } from "node:url";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+/** Static import so Vercel’s bundler traces `dist/server/**` (dynamic `import(path)` often → MODULE_NOT_FOUND). */
+import serverHandler from "../dist/server/index.js";
 
-/** Node.js serverless — Edge cannot load this SSR bundle (uses node:stream, etc.). */
 export const config = {
   runtime: "nodejs",
   maxDuration: 60,
 };
+
+const HOP_BY_HOP = new Set([
+  "connection",
+  "keep-alive",
+  "transfer-encoding",
+  "upgrade",
+  "http2-settings",
+]);
+
+function firstHeader(val) {
+  if (val == null) return "";
+  return Array.isArray(val) ? String(val[0]) : String(val);
+}
 
 async function readBody(req) {
   if (req.method === "GET" || req.method === "HEAD") return undefined;
@@ -16,12 +30,23 @@ async function readBody(req) {
 }
 
 export default async function handler(req, res) {
-  const entry = pathToFileURL(path.join(process.cwd(), "dist/server/index.js")).href;
-  const { default: serverHandler } = await import(entry);
+  if (!serverHandler?.fetch) {
+    console.error("dist/server default export has no fetch()");
+    res.statusCode = 500;
+    res.setHeader("content-type", "text/plain; charset=utf-8");
+    res.end("Server misconfiguration");
+    return;
+  }
 
-  const host = req.headers.host ?? "localhost";
-  const proto = req.headers["x-forwarded-proto"] ?? "https";
-  const url = new URL(req.url ?? "/", `${proto}://${host}`);
+  const host = firstHeader(req.headers.host) || "localhost";
+  const proto = firstHeader(req.headers["x-forwarded-proto"]) || "https";
+
+  let url;
+  try {
+    url = new URL(req.url ?? "/", `${proto}://${host}`);
+  } catch {
+    url = new URL("/", `${proto}://${host}`);
+  }
 
   const rawBody = await readBody(req);
 
@@ -41,30 +66,55 @@ export default async function handler(req, res) {
     body: rawBody,
   });
 
+  let response;
   try {
-    const response = await serverHandler.fetch(webRequest, {}, {});
-
-    res.statusCode = response.status;
-
-    const setCookies =
-      typeof response.headers.getSetCookie === "function"
-        ? response.headers.getSetCookie()
-        : null;
-    if (setCookies?.length) {
-      for (const c of setCookies) res.appendHeader("Set-Cookie", c);
-    }
-
-    response.headers.forEach((value, key) => {
-      if (key.toLowerCase() === "set-cookie" && setCookies?.length) return;
-      res.setHeader(key, value);
-    });
-
-    const buf = Buffer.from(await response.arrayBuffer());
-    res.end(buf);
+    response = await serverHandler.fetch(webRequest, {}, {});
   } catch (err) {
-    console.error(err);
+    console.error("SSR handler.fetch error:", err);
     res.statusCode = 500;
     res.setHeader("content-type", "text/plain; charset=utf-8");
     res.end("Internal Server Error");
+    return;
+  }
+
+  const setCookies =
+    typeof response.headers.getSetCookie === "function"
+      ? response.headers.getSetCookie()
+      : [];
+
+  /** @type {Record<string, string | string[]>} */
+  const outgoing = {};
+
+  response.headers.forEach((value, key) => {
+    const kl = key.toLowerCase();
+    if (kl === "set-cookie") return;
+    if (HOP_BY_HOP.has(kl)) return;
+    outgoing[key] = value;
+  });
+
+  if (setCookies.length === 1) {
+    outgoing["Set-Cookie"] = setCookies[0];
+  } else if (setCookies.length > 1) {
+    outgoing["Set-Cookie"] = setCookies;
+  }
+
+  try {
+    res.writeHead(response.status || 200, outgoing);
+
+    if (response.body) {
+      await pipeline(Readable.fromWeb(response.body), res);
+    } else {
+      res.end();
+    }
+  } catch (err) {
+    console.error("Response pipeline error:", err);
+    if (!res.headersSent) {
+      res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+    }
+    try {
+      res.end("Internal Server Error");
+    } catch {
+      /* ignore */
+    }
   }
 }
