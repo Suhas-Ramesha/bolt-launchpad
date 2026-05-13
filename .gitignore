@@ -16,9 +16,32 @@ dist-ssr
 .nitro
 *.local
 
+# Env (secrets — never commit)
+.env
+.env.*
+!env.example
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
+
+# Vite / tooling caches
+.vite/
+.cache/
+*.tsbuildinfo
+.eslintcache
+
+# Python (Cursor skills scripts, local tools)
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Tests / coverage
+coverage/
+.nyc_output/
 
 # Editor directories and files
 .vscode/*
@@ -30,3 +53,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Optional local certs / keys
+*.pem
+.cursor/

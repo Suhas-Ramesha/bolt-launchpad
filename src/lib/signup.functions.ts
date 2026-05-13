@@ -1,28 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
-import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-
-const signupSchema = z.object({
-  email: z.string().trim().toLowerCase().email().max(255),
-  phone: z
-    .string()
-    .trim()
-    .regex(/^[+]?[\d\s()-]{7,20}$/, "Enter a valid WhatsApp number"),
-});
+import { earlyAccessFormSchema } from "@/lib/signup-schema";
 
 export const submitEarlyAccess = createServerFn({ method: "POST" })
-  .inputValidator((data: unknown) => signupSchema.parse(data))
+  .inputValidator((data: unknown) => earlyAccessFormSchema.parse(data))
   .handler(async ({ data }) => {
     const userAgent = getRequestHeader("user-agent") ?? null;
 
-    const { error } = await supabaseAdmin
-      .from("early_access_signups")
-      .insert({
-        email: data.email,
-        phone: data.phone.replace(/\s+/g, ""),
-        user_agent: userAgent,
-      });
+    const { error } = await supabaseAdmin.from("early_access_signups").insert({
+      email: data.email.trim().toLowerCase(),
+      phone: data.phone.replace(/\s+/g, ""),
+      user_agent: userAgent,
+    });
 
     if (error) {
       if (error.code === "23505") {

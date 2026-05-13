@@ -8,6 +8,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { Toaster } from "@/components/ui/sonner";
+import { SplashIntro } from "@/components/layout/SplashIntro";
 
 import appCss from "../styles.css?url";
 
@@ -73,14 +74,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Bolt+ — Clean, Smooth Energy. No Crash." },
+      {
+        name: "description",
+        content:
+          "Bolt+ is a honey-powered natural energy gel. Pre-launch signup for early access and launch discount.",
+      },
+      { name: "author", content: "Bolt+" },
+      { property: "og:title", content: "Bolt+ — Clean, Smooth Energy. No Crash." },
+      {
+        property: "og:description",
+        content: "Honey-powered natural energy gels. Join the early access list.",
+      },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
@@ -88,7 +95,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800;900&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Syne:wght@500;600;700;800&display=swap",
       },
     ],
   }),
@@ -117,8 +124,10 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
-      <Toaster position="top-center" richColors />
+      <SplashIntro>
+        <Outlet />
+        <Toaster position="top-center" richColors />
+      </SplashIntro>
     </QueryClientProvider>
   );
 }
