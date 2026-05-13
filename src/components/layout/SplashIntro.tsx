@@ -1,23 +1,43 @@
 import { useEffect, useLayoutEffect, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-const HOLD_MS = 4500;
-const EXIT_MS = 1000;
+const HOLD_MS_PHONE = 4500;
+const EXIT_MS_PHONE = 1000;
+/** Tailwind `lg` — longer dwell so laptop/desktop can read the full intro */
+const HOLD_MS_LAPTOP = 7500;
+const EXIT_MS_LAPTOP = 1200;
+const LAPTOP_UP_MQ = "(min-width: 1024px)";
 
 const letters = ["B", "O", "L", "T"] as const;
 
 type Stage = "in" | "out" | "off";
 
+function dwellForViewport(): { hold: number; exit: number } {
+  if (typeof window === "undefined") {
+    return { hold: HOLD_MS_PHONE, exit: EXIT_MS_PHONE };
+  }
+  return window.matchMedia(LAPTOP_UP_MQ).matches
+    ? { hold: HOLD_MS_LAPTOP, exit: EXIT_MS_LAPTOP }
+    : { hold: HOLD_MS_PHONE, exit: EXIT_MS_PHONE };
+}
+
 export function SplashIntro({ children }: { children: ReactNode }) {
   const [reduceMotion, setReduceMotion] = useState(false);
   const [stage, setStage] = useState<Stage>("in");
+  const [dwell, setDwell] = useState(dwellForViewport);
 
   useLayoutEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mq.matches) {
+    const reduceMq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    if (reduceMq.matches) {
       setReduceMotion(true);
       setStage("off");
     }
+
+    const widthMq = window.matchMedia(LAPTOP_UP_MQ);
+    const syncDwell = () => setDwell(dwellForViewport());
+    syncDwell();
+    widthMq.addEventListener("change", syncDwell);
+    return () => widthMq.removeEventListener("change", syncDwell);
   }, []);
 
   useEffect(() => {
@@ -33,13 +53,13 @@ export function SplashIntro({ children }: { children: ReactNode }) {
       return;
     }
     
-    const t1 = window.setTimeout(() => setStage("out"), HOLD_MS);
-    const t2 = window.setTimeout(() => setStage("off"), HOLD_MS + EXIT_MS);
+    const t1 = window.setTimeout(() => setStage("out"), dwell.hold);
+    const t2 = window.setTimeout(() => setStage("off"), dwell.hold + dwell.exit);
     return () => {
       window.clearTimeout(t1);
       window.clearTimeout(t2);
     };
-  }, [reduceMotion]);
+  }, [reduceMotion, dwell.hold, dwell.exit]);
 
   useEffect(() => {
     if (stage === "off") return;
