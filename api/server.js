@@ -3,7 +3,7 @@ import { pathToFileURL } from "node:url";
 
 /** Node.js serverless — Edge cannot load this SSR bundle (uses node:stream, etc.). */
 export const config = {
-  runtime: "nodejs20.x",
+  runtime: "nodejs",
   maxDuration: 60,
 };
 
