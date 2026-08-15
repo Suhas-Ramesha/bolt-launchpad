@@ -1,4 +1,4 @@
-# AbiYt Energy Gel Website
+# BOLT Energy Gel Website
 
 I built this website as a high-impact product launch experience for **AbiYt Energy Gel** — designed to feel fast, modern, and impossible to ignore.
 
